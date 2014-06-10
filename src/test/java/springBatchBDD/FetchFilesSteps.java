@@ -1,7 +1,10 @@
 package springBatchBDD;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -22,6 +26,7 @@ import springBatchBDD.util.SpringBuilder;
 import cucumber.api.Format;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
+import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 
 public class FetchFilesSteps {
@@ -42,14 +47,16 @@ public class FetchFilesSteps {
 		if(remoteFileDir.exists()){
 			FileUtils.cleanDirectory(remoteFileDir);
 		}
-		
+		new File(remoteFileDir, "in").mkdirs();
+		new File(remoteFileDir, "old/in").mkdirs();
+				
 		String localBaseDir = properties.getProperty("local.base.dir");
 		File localFileDir = new File(localBaseDir);
 		
 		if(localFileDir.exists()){
 			FileUtils.cleanDirectory(localFileDir);
 		}
-		
+		new File(localFileDir, "in").mkdirs();
 	}
 
 	@Given("^the loanML files pattern is \"([^\"]*)\"$")
@@ -64,8 +71,10 @@ public class FetchFilesSteps {
 		String remoteBaseDir = properties.getProperty("remote.base.dir");
 		File remoteFileDir = new File(remoteBaseDir + File.separatorChar
 				+ subDirectory);
+		
 		remoteFileDir.mkdirs();
-
+		
+		
 		for (String fileName : fileNames) {
 
 			File newFile = new File(remoteFileDir, fileName);
@@ -98,11 +107,25 @@ public class FetchFilesSteps {
 				
 		while(jobExecution.isRunning()){
 			Thread.sleep(100);
-		}
+		}	
+		
+	}
+	
+	@Then("^the following files should become available in local \"([^\"]*)\" folder:$")
+	public void the_following_files_should_become_available_in_local_folder(String subDirectory, List<String> expectedFileNames) throws Throwable {
+	   
+		String localBaseDir = properties.getProperty("local.base.dir");
+		File localFileDir = new File(localBaseDir + File.separatorChar
+				+ subDirectory);
 		
 		
+		localFileDir.mkdirs();
 		
 		
+		assertThat(localFileDir).exists();
+		
+		List<String> actualFiles = Arrays.asList(localFileDir.list());
+		assertThat(actualFiles).containsOnly(expectedFileNames.toArray(new String[0]));
 	}
 
 }
