@@ -2,11 +2,13 @@ package springBatchBDD;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
 import org.junit.Assert;
 
+import cucumber.api.Format;
 import cucumber.api.PendingException;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
@@ -46,11 +48,12 @@ public class FetchFilesSteps {
 
 	}
 
-	@When("^I launch the fetchFiles batch for loanML and for date (\\d{2}\\-[A-Z]{3}\\-\\d{2})$")
-	public void I_launch_the_fetchFiles_batch_for_loanML_and_for_date_FEB(
-			int arg1, @Format arg2) throws Throwable {
-		// Express the Regexp above with the code you wish you had
-		throw new PendingException();
+	@When("^I launch the fetchFiles batch for loanML and for date (\\d{4}\\-[A-Z]{3}\\-\\d{2})$")
+	public void I_launch_the_fetchFiles_batch_for_loanML_and_for_date_(@Format(value = "yyyy-MMM-dd") Date inventoryDate) throws Throwable {
+		
+		
+		
+		
 	}
 
 }
