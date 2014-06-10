@@ -31,8 +31,6 @@ import cucumber.api.java.en.When;
 
 public class FetchFilesSteps {
 
-	private String loanMLpattern;
-
 	private Properties properties;
 
 	private JobExecution jobExecution;
@@ -61,7 +59,7 @@ public class FetchFilesSteps {
 
 	@Given("^the loanML files pattern is \"([^\"]*)\"$")
 	public void the_loanML_files_pattern_is(String pattern) throws Throwable {
-		loanMLpattern = pattern;
+		properties.setProperty("loanml.daily.filesinPatternStep1", pattern);
 	}
 
 	@Given("^the remote \"([^\"]*)\" folder contains the following files:$")
@@ -87,6 +85,8 @@ public class FetchFilesSteps {
 	@When("^I launch the fetchFiles batch for loanML and for date (\\d{4}\\-[A-Z]{3}\\-\\d{2})$")
 	public void I_launch_the_fetchFiles_batch_for_loanML_and_for_date_(@Format(value = "yyyy-MMM-dd") Date inventoryDate) throws Throwable {
 		
+		rewriteJobProperties();
+		
 		AnnotationConfigApplicationContext context = 
 				new SpringBuilder()
 					.usingContext(new ClassPathResource("/springBatchBDD/spring-config.xml"))
@@ -111,6 +111,13 @@ public class FetchFilesSteps {
 		
 	}
 	
+	private void rewriteJobProperties() throws IOException {
+		String location = properties.getProperty("config.location");
+		PropertiesLoader.write(properties, new File(location));
+		
+		System.setProperty("config.location", location);
+	}
+
 	@Then("^the following files should become available in local \"([^\"]*)\" folder:$")
 	public void the_following_files_should_become_available_in_local_folder(String subDirectory, List<String> expectedFileNames) throws Throwable {
 	   

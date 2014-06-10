@@ -1,7 +1,10 @@
 package springBatchBDD;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.Properties;
 
 public class PropertiesLoader {
@@ -16,6 +19,19 @@ public class PropertiesLoader {
 		}
 		finally {
 			in.close();
+		}
+	}
+
+	public static void write(Properties properties, File file) throws IOException {
+		File parent = file.getParentFile();
+		parent.mkdirs();
+		
+		FileOutputStream out = new FileOutputStream(file);
+		try  {
+			properties.store(new OutputStreamWriter(out, "UTF8"), "ras");
+		}
+		finally {
+			out.close();
 		}
 	}
 }
