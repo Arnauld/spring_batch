@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameter;
@@ -21,9 +22,11 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 
+import springBatchBDD.util.MemoryAppender;
 import springBatchBDD.util.PropertiesUtils;
 import springBatchBDD.util.SpringBuilder;
 import cucumber.api.Format;
+import cucumber.api.java.After;
 import cucumber.api.java.Before;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -38,6 +41,8 @@ public class FetchFilesSteps {
 	private static final String REMOTE_BASE_DIR_PROPERTY = "remote.base.dir";
 
 	private Properties properties;
+
+	private MemoryAppender memoryAppender;
 
 	@Before
 	public void initProperties() throws IOException {
@@ -59,6 +64,18 @@ public class FetchFilesSteps {
 			FileUtils.cleanDirectory(localFileDir);
 		}
 		new File(localFileDir, IN).mkdirs();
+	}
+	
+	@Before
+	public void registerLoggerListener() {
+		memoryAppender = new MemoryAppender("%d{ABSOLUTE} %5p %c{1}:%L - %m%n");
+		//Logger.getRootLogger().addAppender(memoryAppender);
+		Logger.getLogger(FetchFilesTasklet.class).addAppender(memoryAppender);
+	}
+	
+	@After
+	public void unregisterLoggerListener() {
+		Logger.getLogger(FetchFilesTasklet.class).removeAppender(memoryAppender);
 	}
 
 	@Given("^the loanML files pattern is \"([^\"]*)\"$")
@@ -118,6 +135,11 @@ public class FetchFilesSteps {
 
 		List<String> actualFiles = Arrays.asList(localFileDir.list());
 		assertThat(actualFiles).containsOnly(expectedFileNames.toArray(new String[0]));
+	}
+	
+	@Then("^the log should contain the message : \"([^\"]*)\"$")
+	public void the_log_should_contain_the_message_(String expectedLogMessage) throws Throwable {
+	    assertThat(memoryAppender.rawContent()).contains(expectedLogMessage);
 	}
 
 }

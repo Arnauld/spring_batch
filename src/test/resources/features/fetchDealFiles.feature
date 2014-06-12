@@ -14,7 +14,7 @@ When I launch the fetchFiles batch for loanML and for date 2014-FEB-11
 Then the following files should become available in local "in" folder:
 | CPMPROD_D_FSI_LOB3of4_20140211_0032_C.xml |
 | CPMPROD_D_FSI_LOB3of4_20140211_0033_E.xml |
-And the log should contain the message : "OK - LoanML : 2 file(s) have been copied"
+And the log should contain the message : "OK - loanML : 2 file(s) have been copied"
 
 
 

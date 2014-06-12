@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
 import org.springframework.batch.core.StepContribution;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
@@ -18,6 +19,8 @@ public class FetchFilesTasklet implements Tasklet {
 	public static final String BATCH_NAME = "batchName";
 
 	public static final String INVENTORY_DATE = "inventoryDate";
+	
+	private static final Logger LOGGER = Logger.getLogger(FetchFilesTasklet.class);
 
 	private String remoteBaseDir;
 
@@ -27,6 +30,7 @@ public class FetchFilesTasklet implements Tasklet {
 
 	@Override
 	public RepeatStatus execute(StepContribution arg0, ChunkContext params) throws Exception {
+		
 
 		Map<String, Object> jobParameters = params.getStepContext().getJobParameters();
 
@@ -37,16 +41,32 @@ public class FetchFilesTasklet implements Tasklet {
 		String batchName = (String) jobParameters.get(BATCH_NAME);
 
 		String regexp = knownPatterns.get(batchName);
+		
+		LOGGER.debug("Job pattern " + regexp);
+		
 		FilenameFilter filenameFilter = createFilenameFilter(regexp, formattedDate);
 
 		File inRemoteFolder = new File(remoteBaseDir, "in");
 		File[] matchingRemoteFiles = inRemoteFolder.listFiles(filenameFilter);
 
 		File localInFolder = new File(localBaseDir, "in");
-
+		
+		
+		int nbFilesCopied=0;
 		for (File remoteFile : matchingRemoteFiles) {
 			FileUtils.copyFileToDirectory(remoteFile, localInFolder, true);
+			nbFilesCopied++;
 		}
+		
+		if(nbFilesCopied>0){
+			LOGGER.info("OK - "+batchName+" : "+nbFilesCopied+" file(s) have been copied");
+		}
+		else{
+			LOGGER.warn("KO - no file copied for "+batchName+" for date "+inventoryDate);
+		}
+			
+		
+		
 
 		return RepeatStatus.FINISHED;
 
