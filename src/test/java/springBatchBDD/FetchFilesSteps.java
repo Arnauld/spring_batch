@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 
+import springBatchBDD.util.PropertiesUtils;
 import springBatchBDD.util.SpringBuilder;
 import cucumber.api.Format;
 import cucumber.api.java.Before;
@@ -84,21 +86,23 @@ public class FetchFilesSteps {
 
 	@When("^I launch the fetchFiles batch for loanML and for date (\\d{4}\\-[A-Z]{3}\\-\\d{2})$")
 	public void I_launch_the_fetchFiles_batch_for_loanML_and_for_date_(@Format(value = "yyyy-MMM-dd") Date inventoryDate) throws Throwable {
-		
-		rewriteJobProperties();
-		
+				
 		AnnotationConfigApplicationContext context = 
 				new SpringBuilder()
 					.usingContext(new ClassPathResource("/springBatchBDD/spring-config.xml"))
+					.usingProperties(PropertiesUtils.propertiesToMap(properties))
 					.build();
 		
 		JobLauncher jobLauncher=(JobLauncher)context.getBean("jobLauncher");
 
 		Job fetchFilesJob=(Job)context.getBean("fetchFiles");
 
+		String inventoryDateAsInCPMJob=new SimpleDateFormat("ddMMyy").format(inventoryDate);
+		
+		
 		Map<String,JobParameter> parameters=new HashMap<String, JobParameter>();
-		parameters.put("inventoryDate", new JobParameter(inventoryDate));
-		parameters.put("batchName", new JobParameter("LoanML"));
+		parameters.put("inventoryDate", new JobParameter(inventoryDateAsInCPMJob));
+		parameters.put("batchName", new JobParameter("loanML"));
 				
 		
 		JobParameters jobParameters=new JobParameters(parameters);
@@ -110,20 +114,13 @@ public class FetchFilesSteps {
 		}	
 		
 	}
-	
-	private void rewriteJobProperties() throws IOException {
-		String location = properties.getProperty("config.location");
-		PropertiesLoader.write(properties, new File(location));
-		
-		System.setProperty("config.location", location);
-	}
+
 
 	@Then("^the following files should become available in local \"([^\"]*)\" folder:$")
 	public void the_following_files_should_become_available_in_local_folder(String subDirectory, List<String> expectedFileNames) throws Throwable {
 	   
 		String localBaseDir = properties.getProperty("local.base.dir");
-		File localFileDir = new File(localBaseDir + File.separatorChar
-				+ subDirectory);
+		File localFileDir = new File(localBaseDir + File.separatorChar + subDirectory);
 		
 		
 		localFileDir.mkdirs();

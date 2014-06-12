@@ -30,7 +30,18 @@
 		</batch:step>
 	</job>
 
-	<bean id="fetchFilesTasklet" class="springBatchBDD.FetchFilesTasklet" />
+	<bean id="fetchFilesTasklet" class="springBatchBDD.FetchFilesTasklet" >
+		<property name="remoteBaseDir" value="${remote.base.dir}"/>
+		<property name="localBaseDir" value="${local.base.dir}"/>
+		
+		<property name="knownPatterns">
+			<map>
+				<entry key="loanML" value="${loanml.daily.filesinPatternStep1}" />
+		
+			</map>
+		</property>
+		
+	</bean>
 
 	<bean id="jobLauncher"
 		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
@@ -44,5 +55,5 @@
 
 	<bean id="transactionManager"
 		class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
-
+		
 </beans>
