@@ -1,6 +1,8 @@
 package springBatchBDD;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,18 +10,25 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.junit.Assert;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import springBatchBDD.util.MemoryAppender;
@@ -44,6 +53,8 @@ public class FetchFilesSteps {
 
 	private MemoryAppender memoryAppender;
 
+	private FileDao fileDaoMock;
+	
 	@Before
 	public void initProperties() throws IOException {
 		properties = PropertiesLoader.load("/cfg/job.properties");
@@ -83,7 +94,8 @@ public class FetchFilesSteps {
 		properties.setProperty("loanml.daily.filesinPatternStep1", pattern);
 	}
 
-	@Given("^the remote \"([^\"]*)\" folder contains the following files:$")
+	// (?:only )? means that it's optional (final "?"), and not capturing (it doesn't become a parameter for the method)
+	@Given("^the remote \"([^\"]*)\" folder contains (?:only )?the following files:$")
 	public void the_remote_folder_contains_the_following_files(String subDirectory, List<String> fileNames) throws Throwable {
 
 		String remoteBaseDir = properties.getProperty(REMOTE_BASE_DIR_PROPERTY);
@@ -101,18 +113,19 @@ public class FetchFilesSteps {
 	@When("^I launch the fetchFiles batch for loanML and for date (\\d{4}\\-[A-Z]{3}\\-\\d{2})$")
 	public void I_launch_the_fetchFiles_batch_for_loanML_and_for_date_(@Format(value = "yyyy-MMM-dd") Date inventoryDate) throws Throwable {
 
-		AnnotationConfigApplicationContext context = new SpringBuilder()//
+		fileDaoMock = Mockito.mock(FileDao.class);
+		SpringBuilder builder = new SpringBuilder()//
 				.usingContext(new ClassPathResource("/springBatchBDD/spring-config.xml"))//
-				.usingProperties(PropertiesUtils.propertiesToMap(properties))//
-				.build();
+				.usingSingleton("fileDao", fileDaoMock)
+				.usingProperties(PropertiesUtils.propertiesToMap(properties));
+		
+		AnnotationConfigApplicationContext context = builder.build();
 
 		JobLauncher jobLauncher = (JobLauncher) context.getBean("jobLauncher");
 		Job fetchFilesJob = (Job) context.getBean("fetchFiles");
 		
 		JobParameters jobParameters = createFetchFilesParameters(inventoryDate, "loanML");
 		jobLauncher.run(fetchFilesJob, jobParameters);
-	
-
 	}
 
 	public JobParameters createFetchFilesParameters(Date inventoryDate, String batchName) {
@@ -140,6 +153,37 @@ public class FetchFilesSteps {
 	@Then("^the log should contain the message : \"([^\"]*)\"$")
 	public void the_log_should_contain_the_message_(String expectedLogMessage) throws Throwable {
 	    assertThat(memoryAppender.rawContent()).contains(expectedLogMessage);
+	}
+	
+	@Then("^the following files should have been saved:$")
+	public void the_following_files_should_have_been_saved(List<String> expectedSavedFiles) throws Throwable {
+	   
+		ArgumentCaptor<CpmFile> capturedFile=ArgumentCaptor.forClass(CpmFile.class);
+		
+		verify(fileDaoMock, times(expectedSavedFiles.size())).save(capturedFile.capture());
+		
+		Set<String> uniqueNames = fileToNames(capturedFile.getAllValues());
+		assertThat(uniqueNames).containsOnly(expectedSavedFiles.toArray(new String[0]));
+	}
+	
+	
+	private static Set<String> fileToNames(List<CpmFile> files) {
+		Set<String> uniques = new HashSet<String>();
+		for(CpmFile file : files)
+			uniques.add(file.getFilename());
+		return uniques;
+	}
+
+
+	@Configuration
+	public static class ScenarioConfiguration {
+		
+		private FileDao fileDaoMock = Mockito.mock(FileDao.class);;
+		
+		@Bean(name = "fileDao")
+		public FileDao fileDao() {
+			return fileDaoMock;
+		}
 	}
 
 }

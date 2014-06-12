@@ -12,6 +12,7 @@
 	<context:component-scan base-package="springBatchBDD" />
 	<context:annotation-config />
 
+	<bean id="fileDao" class="springBatchBDD.FileDaoImpl"/>
 
 	<bean id="simpleStep"
 		class="org.springframework.batch.core.step.item.SimpleStepFactoryBean"
@@ -33,6 +34,7 @@
 	<bean id="fetchFilesTasklet" class="springBatchBDD.FetchFilesTasklet" >
 		<property name="remoteBaseDir" value="${remote.base.dir}"/>
 		<property name="localBaseDir" value="${local.base.dir}"/>
+		<property name="fileDao" ref="fileDao"/>
 		
 		<property name="knownPatterns">
 			<map>

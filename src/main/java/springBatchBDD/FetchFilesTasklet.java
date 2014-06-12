@@ -27,6 +27,8 @@ public class FetchFilesTasklet implements Tasklet {
 	private String localBaseDir;
 
 	private Map<String, String> knownPatterns;
+	
+	private FileDao fileDao;
 
 	@Override
 	public RepeatStatus execute(StepContribution arg0, ChunkContext params) throws Exception {
@@ -48,13 +50,20 @@ public class FetchFilesTasklet implements Tasklet {
 
 		File inRemoteFolder = new File(remoteBaseDir, "in");
 		File[] matchingRemoteFiles = inRemoteFolder.listFiles(filenameFilter);
-
 		File localInFolder = new File(localBaseDir, "in");
+		
+		if(matchingRemoteFiles.length == 0) {
+			File oldInRemoteFolder = new File(remoteBaseDir, "old/in");
+			matchingRemoteFiles = oldInRemoteFolder.listFiles(filenameFilter);
+		}
 		
 		
 		int nbFilesCopied=0;
 		for (File remoteFile : matchingRemoteFiles) {
 			FileUtils.copyFileToDirectory(remoteFile, localInFolder, true);
+				
+			fileDao.save(new CpmFile(remoteFile.getName()));
+			
 			nbFilesCopied++;
 		}
 		
@@ -64,12 +73,7 @@ public class FetchFilesTasklet implements Tasklet {
 		else{
 			LOGGER.warn("KO - no file copied for "+batchName+" for date "+inventoryDate);
 		}
-			
-		
-		
-
 		return RepeatStatus.FINISHED;
-
 	}
 
 	public FilenameFilter createFilenameFilter(String regexp, final String formattedDate) {
@@ -83,28 +87,19 @@ public class FetchFilesTasklet implements Tasklet {
 		return filenameFilter;
 	}
 
-	public String getRemoteBaseDir() {
-		return remoteBaseDir;
-	}
-
 	public void setRemoteBaseDir(String remoteBaseDir) {
 		this.remoteBaseDir = remoteBaseDir;
-	}
-
-	public String getLocalBaseDir() {
-		return localBaseDir;
 	}
 
 	public void setLocalBaseDir(String localBaseDir) {
 		this.localBaseDir = localBaseDir;
 	}
 
-	public Map<String, String> getKnownPatterns() {
-		return knownPatterns;
-	}
-
 	public void setKnownPatterns(Map<String, String> knownPatterns) {
 		this.knownPatterns = knownPatterns;
 	}
 
+	public void setFileDao(FileDao fileDao) {
+		this.fileDao = fileDao;
+	}
 }
