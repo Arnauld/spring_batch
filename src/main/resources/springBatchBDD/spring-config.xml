@@ -21,12 +21,12 @@
 		<property name="startLimit" value="1" />
 		<property name="commitInterval" value="1" />
 	</bean>
-
-
+	
 	<job id="fetchFiles" xmlns="http://www.springframework.org/schema/batch"
 		restartable="true">
 		<batch:step id="fetchFilesStep">
 			<batch:tasklet ref="fetchFilesTasklet" />
+			
 		</batch:step>
 	</job>
 
