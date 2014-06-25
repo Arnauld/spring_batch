@@ -1,2 +1,2 @@
-springBatch_BDD_kata
+Spring Batch
 ====================
